@@ -1,0 +1,15 @@
+# Local environment overrides (the app runs fine without this file)
+.env
+
+# Editor / IDE
+.idea/
+.vscode/
+*.code-workspace
+
+# OS cruft
+.DS_Store
+Thumbs.db
+__MACOSX/
+
+# PHP deps (intentionally unused — this project is dependency-free)
+vendor/
