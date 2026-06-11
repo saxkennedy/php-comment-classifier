@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Sweetwater\Comments;
 
+use DateTimeImmutable;
 use PDO;
 
 final class CommentRepository
@@ -13,8 +14,6 @@ final class CommentRepository
     }
 
     /**
-     * All comments, ordered by order id for a stable, repeatable report.
-     *
      * @return list<Comment>
      */
     public function all(): array
@@ -30,5 +29,16 @@ final class CommentRepository
             ),
             $rows,
         );
+    }
+
+    public function updateShipDate(int $orderId, DateTimeImmutable $date): void
+    {
+        $stmt = $this->pdo->prepare(
+            'UPDATE sweetwater_test SET shipdate_expected = :date WHERE orderid = :id'
+        );
+        $stmt->execute([
+            ':date' => $date->format('Y-m-d H:i:s'),
+            ':id'   => $orderId,
+        ]);
     }
 }
