@@ -61,6 +61,13 @@ header('Content-Type: text/html; charset=utf-8');
         .order-id { color: #888; font-size: 0.8em; }
         .ship-date { font-size: 0.85em; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid #e3e3e3; }
         .empty { color: #999; font-style: italic; }
+        .filters { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 2rem; }
+        .filter { position: relative; }
+        .filter > button { font: inherit; padding: 0.35rem 0.75rem; border: 1px solid #bbb; border-radius: 4px; background: #fff; cursor: pointer; }
+        .filter-panel { position: absolute; top: 100%; left: 0; margin-top: 0.25rem; background: #fff; border: 1px solid #bbb; border-radius: 4px; padding: 0.5rem 0.9rem; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); z-index: 10; white-space: nowrap; }
+        .filter-panel label { display: block; padding: 0.2rem 0; }
+        .filters select { font: inherit; padding: 0.3rem; }
+        .filters label { font-size: 0.9em; color: #444; }
     </style>
 </head>
 <body>
@@ -68,16 +75,35 @@ header('Content-Type: text/html; charset=utf-8');
     <p class="summary"><?= count($comments) ?> Comments grouped by topic. A comment may
         appear under more than one section when it covers more than one topic.</p>
 
+    <div class="filters">
+        <div class="filter">
+            <button type="button" id="cat-toggle">Categories &#9662;</button>
+            <div class="filter-panel" id="cat-panel" hidden>
+                <label><input type="checkbox" id="cat-all" checked> All</label>
+                <?php foreach (Category::displayOrder() as $category): ?>
+                    <label><input type="checkbox" class="cat-option" value="<?= h($category->value) ?>" checked> <?= h($category->heading()) ?></label>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <label>Ship date Provided:
+            <select id="date-filter">
+                <option value="all">Both</option>
+                <option value="with">With date</option>
+                <option value="without">Without date</option>
+            </select>
+        </label>
+    </div>
+
     <?php foreach (Category::displayOrder() as $category): ?>
         <?php $items = $grouped[$category->value]; ?>
-        <section>
+        <section data-category="<?= h($category->value) ?>">
             <h2><?= h($category->heading()) ?> <span class="count">(<?= count($items) ?>)</span></h2>
             <?php if ($items === []): ?>
                 <p class="empty">No comments in this section.</p>
             <?php else: ?>
                 <ul>
                     <?php foreach ($items as $comment): ?>
-                        <li>
+                        <li data-has-date="<?= $comment->expectedShipDate !== null ? '1' : '0' ?>">
                             <div class="order-id">Order #<?= $comment->orderId ?></div>
                             <div><?= nl2br(h($comment->text)) ?></div>
                             <div class="ship-date"><strong>Expected Ship Date:</strong> <?= $comment->expectedShipDate !== null ? h($comment->expectedShipDate->format('M j, Y')) : 'None mentioned' ?></div>
@@ -87,5 +113,72 @@ header('Content-Type: text/html; charset=utf-8');
             <?php endif; ?>
         </section>
     <?php endforeach; ?>
+
+    <script>
+        (function () {
+            const toggle = document.getElementById('cat-toggle');
+            const panel = document.getElementById('cat-panel');
+            const allBox = document.getElementById('cat-all');
+            const options = Array.from(document.querySelectorAll('.cat-option'));
+            const dateFilter = document.getElementById('date-filter');
+
+            toggle.addEventListener('click', function () {
+                panel.hidden = !panel.hidden;
+            });
+
+            document.addEventListener('click', function (event) {
+                if (!panel.hidden && !panel.contains(event.target) && event.target !== toggle) {
+                    panel.hidden = true;
+                }
+            });
+
+            allBox.addEventListener('change', function () {
+                options.forEach(function (option) { option.checked = allBox.checked; });
+                apply();
+            });
+
+            options.forEach(function (option) {
+                option.addEventListener('change', function () {
+                    allBox.checked = options.every(function (other) { return other.checked; });
+                    apply();
+                });
+            });
+
+            dateFilter.addEventListener('change', apply);
+
+            function apply() {
+                const selected = new Set(
+                    options.filter(function (option) { return option.checked; })
+                           .map(function (option) { return option.value; })
+                );
+                const mode = dateFilter.value;
+
+                document.querySelectorAll('section[data-category]').forEach(function (section) {
+                    const categoryOn = selected.has(section.dataset.category);
+                    let visible = 0;
+
+                    section.querySelectorAll('li[data-has-date]').forEach(function (card) {
+                        const hasDate = card.dataset.hasDate === '1';
+                        let dateOk;
+                        if (mode === 'with') {
+                            dateOk = hasDate;
+                        } else if (mode === 'without') {
+                            dateOk = !hasDate;
+                        } else {
+                            dateOk = true;
+                        }
+
+                        const show = categoryOn && dateOk;
+                        card.style.display = show ? '' : 'none';
+                        if (show) { visible += 1; }
+                    });
+
+                    section.style.display = (categoryOn && visible > 0) ? '' : 'none';
+                    const count = section.querySelector('.count');
+                    if (count) { count.textContent = '(' + visible + ')'; }
+                });
+            }
+        })();
+    </script>
 </body>
 </html>
