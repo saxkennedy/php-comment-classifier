@@ -1,0 +1,28 @@
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: sweetwater_test
+    volumes:
+      - ./docker/01-sql-mode.sql:/docker-entrypoint-initdb.d/01-sql-mode.sql:ro
+      - ./data/sweetwater_test.sql:/docker-entrypoint-initdb.d/02-sweetwater_test.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: sweetwater_test
+      DB_USER: root
+      DB_PASS: ""
+    depends_on:
+      db:
+        condition: service_healthy
