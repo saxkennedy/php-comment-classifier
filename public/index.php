@@ -59,6 +59,7 @@ header('Content-Type: text/html; charset=utf-8');
         ul { list-style: none; padding: 0; }
         li { border: 1px solid #e3e3e3; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 0.6rem; }
         .order-id { color: #888; font-size: 0.8em; }
+        .ship-date { font-size: 0.85em; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid #e3e3e3; }
         .empty { color: #999; font-style: italic; }
     </style>
 </head>
@@ -79,6 +80,7 @@ header('Content-Type: text/html; charset=utf-8');
                         <li>
                             <div class="order-id">Order #<?= $comment->orderId ?></div>
                             <div><?= nl2br(h($comment->text)) ?></div>
+                            <div class="ship-date"><strong>Expected Ship Date:</strong> <?= $comment->expectedShipDate !== null ? h($comment->expectedShipDate->format('M j, Y')) : 'None mentioned' ?></div>
                         </li>
                     <?php endforeach; ?>
                 </ul>

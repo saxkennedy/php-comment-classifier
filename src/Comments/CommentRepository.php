@@ -19,14 +19,20 @@ final class CommentRepository
     public function all(): array
     {
         $rows = $this->pdo
-            ->query('SELECT orderid, comments FROM sweetwater_test ORDER BY orderid')
+            ->query('SELECT orderid, comments, shipdate_expected FROM sweetwater_test ORDER BY orderid')
             ->fetchAll();
 
         return array_map(
-            static fn (array $row): Comment => new Comment(
-                (int) $row['orderid'],
-                (string) $row['comments'],
-            ),
+            static function (array $row): Comment {
+                $shipDate = (string) $row['shipdate_expected'];
+                $hasDate  = $shipDate !== '' && !str_starts_with($shipDate, '0000-00-00');
+
+                return new Comment(
+                    (int) $row['orderid'],
+                    (string) $row['comments'],
+                    $hasDate ? new DateTimeImmutable($shipDate) : null,
+                );
+            },
             $rows,
         );
     }
