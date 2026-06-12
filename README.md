@@ -15,8 +15,7 @@ with a table of order comments and does two things:
 Built with plain PHP 8.3 and PDO. No frameworks, no Composer packages, and
 vanilla JavaScript only (no libraries).
 
-> Status: actively in progress. The report, backfill, and Docker setup work
-> end to end; unit tests and further polish are landing incrementally.
+> Status: Complete/Awaiting Team Validation
 
 The original test brief is preserved in [TEST_INSTRUCTIONS.md](TEST_INSTRUCTIONS.md).
 
