@@ -4,19 +4,7 @@ declare(strict_types=1);
 
 namespace Sweetwater\Comments;
 
-/**
- * Assigns a comment to one or more report categories using explicit phrase
- * rules that catch likely phrases given the actual comment data.
- *
- * A comment can match several categories. One that asks for candy and to be
- * called belongs in both. Anything that matches no named category falls
- * through to Miscellaneous.
- *
- * The phrase lists were built by reading the actual comment data and matching
- * the wording customers really used. Subtle, ambiguous mentions (a bare name
- * drop with no "referred"/"sales rep" cue) are intentionally left to
- * Miscellaneous rather than risk false positives.
- */
+
 final class CommentClassifier
 {
     /**
@@ -47,7 +35,7 @@ final class CommentClassifier
     ];
 
     /**
-     * Every category the comment belongs to (never empty; Miscellaneous is
+     * Matching categories, best match first. Never empty (Miscellaneous is
      * returned when nothing else matches).
      *
      * @return list<Category>
@@ -58,14 +46,27 @@ final class CommentClassifier
         $matched  = [];
 
         foreach (self::RULES as $category => $needles) {
+            $hits = 0;
             foreach ($needles as $needle) {
                 if (str_contains($haystack, $needle)) {
-                    $matched[] = Category::from($category);
-                    break;
+                    $hits++;
                 }
+            }
+            if ($hits > 0) {
+                $matched[] = ['category' => Category::from($category), 'hits' => $hits];
             }
         }
 
-        return $matched === [] ? [Category::Miscellaneous] : $matched;
+        if ($matched === []) {
+            return [Category::Miscellaneous];
+        }
+
+        // Most hits wins best match; ties fall back to the priority order.
+        usort($matched, static function (array $a, array $b): int {
+            return ($b['hits'] <=> $a['hits'])
+                ?: ($a['category']->priority() <=> $b['category']->priority());
+        });
+
+        return array_map(static fn (array $m): Category => $m['category'], $matched);
     }
 }

@@ -23,6 +23,29 @@ enum Category: string
         };
     }
 
+    public function label(): string
+    {
+        return match ($this) {
+            self::Candy          => 'Candy',
+            self::CallPreference => "Call / don't call",
+            self::Referral       => 'Referral',
+            self::Signature      => 'Signature',
+            self::Miscellaneous  => 'Miscellaneous',
+        };
+    }
+
+    // Tie-break order for best match when categories have equal hit counts.
+    public function priority(): int
+    {
+        return match ($this) {
+            self::CallPreference => 1,
+            self::Signature      => 2,
+            self::Referral       => 3,
+            self::Candy          => 4,
+            self::Miscellaneous  => 5,
+        };
+    }
+
     /**
      * Sections in display order, with miscellaneous last as the catch-all.
      *

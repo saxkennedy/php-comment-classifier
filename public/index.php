@@ -24,15 +24,13 @@ try {
 
 $classifier = new CommentClassifier();
 
-// Bucket and pre-seed comments
 $grouped = [];
 foreach (Category::displayOrder() as $category) {
     $grouped[$category->value] = [];
 }
 foreach ($comments as $comment) {
-    foreach ($classifier->classify($comment->text) as $category) {
-        $grouped[$category->value][] = $comment;
-    }
+    $categories = $classifier->classify($comment->text);
+    $grouped[$categories[0]->value][] = ['comment' => $comment, 'categories' => $categories];
 }
 
 /** Escape text for safe HTML output. */
@@ -59,6 +57,9 @@ header('Content-Type: text/html; charset=utf-8');
         ul { list-style: none; padding: 0; }
         li { border: 1px solid #e3e3e3; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 0.6rem; }
         .order-id { color: #888; font-size: 0.8em; }
+        .chips { margin: 0.3rem 0 0.5rem; }
+        .chip { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px; background: #eee; color: #444; font-size: 0.72em; margin-right: 0.3rem; }
+        .chip-best { background: #1a1a1a; color: #fff; font-weight: bold; }
         .ship-date { font-size: 0.85em; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid #e3e3e3; }
         .empty { color: #999; font-style: italic; }
         .filters { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 2rem; }
@@ -72,8 +73,8 @@ header('Content-Type: text/html; charset=utf-8');
 </head>
 <body>
     <h1>Order Comments Report</h1>
-    <p class="summary"><?= count($comments) ?> Comments grouped by topic. A comment may
-        appear under more than one section when it covers more than one topic.</p>
+    <p class="summary"><?= count($comments) ?> comments, each grouped under its best-match
+        topic. Tags show every topic a comment matches; the filled tag is the best match.</p>
 
     <div class="filters">
         <div class="filter">
@@ -102,9 +103,15 @@ header('Content-Type: text/html; charset=utf-8');
                 <p class="empty">No comments in this section.</p>
             <?php else: ?>
                 <ul>
-                    <?php foreach ($items as $comment): ?>
+                    <?php foreach ($items as $item): ?>
+                        <?php $comment = $item['comment']; ?>
                         <li data-has-date="<?= $comment->expectedShipDate !== null ? '1' : '0' ?>">
                             <div class="order-id">Order #<?= $comment->orderId ?></div>
+                            <div class="chips">
+                                <?php foreach ($item['categories'] as $index => $cat): ?>
+                                    <span class="chip<?= $index === 0 ? ' chip-best' : '' ?>"><?= h($cat->label()) ?></span>
+                                <?php endforeach; ?>
+                            </div>
                             <div><?= nl2br(h($comment->text)) ?></div>
                             <div class="ship-date"><strong>Expected Ship Date:</strong> <?= $comment->expectedShipDate !== null ? h($comment->expectedShipDate->format('M j, Y')) : 'None mentioned' ?></div>
                         </li>
