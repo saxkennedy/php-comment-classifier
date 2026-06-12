@@ -61,6 +61,7 @@ header('Content-Type: text/html; charset=utf-8');
         .chip { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px; background: #eee; color: #444; font-size: 0.72em; margin-right: 0.3rem; }
         .chip-best { background: #1a1a1a; color: #fff; font-weight: bold; }
         .ship-date { font-size: 0.85em; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid #e3e3e3; }
+        .date-missing { color: #c1121f; font-weight: bold; }
         .empty { color: #999; font-style: italic; }
         .filters { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 2rem; }
         .filter { position: relative; }
@@ -88,9 +89,9 @@ header('Content-Type: text/html; charset=utf-8');
         </div>
         <label>Ship date Provided:
             <select id="date-filter">
-                <option value="all">Both</option>
-                <option value="with">With date</option>
-                <option value="without">Without date</option>
+                <option value="all">All</option>
+                <option value="present">Date Present</option>
+                <option value="missing">Date Missing</option>
             </select>
         </label>
     </div>
@@ -113,7 +114,7 @@ header('Content-Type: text/html; charset=utf-8');
                                 <?php endforeach; ?>
                             </div>
                             <div><?= nl2br(h($comment->text)) ?></div>
-                            <div class="ship-date"><strong>Expected Ship Date:</strong> <?= $comment->expectedShipDate !== null ? h($comment->expectedShipDate->format('M j, Y')) : 'None mentioned' ?></div>
+                            <div class="ship-date"><strong>Expected Ship Date:</strong> <?= $comment->expectedShipDate !== null ? h($comment->expectedShipDate->format('M j, Y')) : '<span class="date-missing">Date Missing</span>' ?></div>
                         </li>
                     <?php endforeach; ?>
                 </ul>
@@ -167,9 +168,9 @@ header('Content-Type: text/html; charset=utf-8');
                     section.querySelectorAll('li[data-has-date]').forEach(function (card) {
                         const hasDate = card.dataset.hasDate === '1';
                         let dateOk;
-                        if (mode === 'with') {
+                        if (mode === 'present') {
                             dateOk = hasDate;
-                        } else if (mode === 'without') {
+                        } else if (mode === 'missing') {
                             dateOk = !hasDate;
                         } else {
                             dateOk = true;
