@@ -6,12 +6,18 @@ use Sweetwater\Comments\Category;
 use Sweetwater\Comments\CommentClassifier;
 use Sweetwater\Comments\CommentRepository;
 use Sweetwater\Database\Connection;
+use Sweetwater\ShipDate\ShipDateBackfiller;
+use Sweetwater\ShipDate\ShipDateParser;
 
 $config = require __DIR__ . '/../src/bootstrap.php';
 
 try {
-    $pdo      = Connection::fromConfig($config);
-    $comments = (new CommentRepository($pdo))->all();
+    $pdo  = Connection::fromConfig($config);
+    $repo = new CommentRepository($pdo);
+    // Fill any outstanding ship dates from the comment text on load, then read
+    // for display. Only writes rows that still need a date.
+    (new ShipDateBackfiller($repo, new ShipDateParser()))->run();
+    $comments = $repo->all();
 } catch (\PDOException $e) {
     http_response_code(503);
     header('Content-Type: text/html; charset=utf-8');

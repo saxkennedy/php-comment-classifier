@@ -8,14 +8,15 @@ with a table of order comments and does two things:
    call me, who referred me, signature on delivery, miscellaneous), tags each
    comment with every topic it matches, and offers category and ship-date
    filters.
-2. **Ship-date backfill** (`bin/backfill_shipdates.php`) - a command that
-   parses the "Expected Ship Date" out of each comment and writes it into the
-   `shipdate_expected` column.
+2. **Ship-date fill** - parses the "Expected Ship Date" out of each comment and
+   writes it into the `shipdate_expected` column. This runs automatically when
+   the report loads and is also available as commands: `bin/backfill_shipdates.php` to fill and
+   `bin/reset_shipdates.php` to revert to the original zeros for re-testing.
 
 Built with plain PHP 8.3 and PDO. No frameworks, no Composer packages, and
 vanilla JavaScript only (no libraries).
 
-> Status: Making a process change - the table should auto-update on loading the application for the date logic, the extra docker command is probably unneeded.  Will commit that change next.
+> Status: Complete.
 
 The original test brief is preserved in [TEST_INSTRUCTIONS.md](TEST_INSTRUCTIONS.md).
 
@@ -28,16 +29,17 @@ report. Nothing to configure.
 docker compose up --build
 ```
 
-Then open <http://localhost:8080>.
+Then open <http://localhost:8080>. The ship dates (task 2) fill in
+automatically on that first load.
 
-To populate the ship dates (task 2), run the backfill once the stack is up:
+Optional dev commands once the stack is up:
 
 ```bash
-docker compose exec app php bin/backfill_shipdates.php
+docker compose exec app php bin/reset_shipdates.php     # revert to the original zeros
+docker compose exec app php bin/backfill_shipdates.php  # fill the ship dates by hand
 ```
 
-Refresh the page and the parsed dates appear. Stop everything with
-`docker compose down`.
+Stop everything with `docker compose down`.
 
 ## Run it locally (without Docker)
 
@@ -58,13 +60,15 @@ Requirements: PHP 8.1+ and a MySQL 8 server.
    php -S localhost:8000 -t public
    ```
 
-   Then open <http://localhost:8000>.
+   Then open <http://localhost:8000>. The ship dates (task 2) fill in
+   automatically on load.
 
-3. Populate the ship dates (task 2):
+Optional dev commands:
 
-   ```bash
-   php bin/backfill_shipdates.php
-   ```
+```bash
+php bin/reset_shipdates.php     # revert to the original zeros
+php bin/backfill_shipdates.php  # fill the ship dates by hand
+```
 
 Connection settings default to a stock local MySQL (`127.0.0.1`, user `root`,
 empty password, database `sweetwater_test`). If yours differ, copy
@@ -90,14 +94,15 @@ It prints each result and exits non-zero if anything fails. The suite covers the
 
 ## How it works
 
-- `public/index.php` is **read-only**: it only reads the table to render the
-  report. The single writer in the project is the backfill command.
+- On load, `public/index.php` fills any outstanding ship dates from the comment
+  text (via `ShipDate\ShipDateBackfiller`), then reads the table to render the
+  report. 
 - The supplied dump (`data/sweetwater_test.sql`) is never modified, so the
   original data is always recoverable and a fresh `docker compose up` restores
   it.  We do actually make an update, to meet the criteria of the instructions/business needs.
 - `src/` holds the pieces: `Config` (env-based settings), `Database\Connection`
   (PDO), `Comments\*` (the category model, classifier, and repository), and
-  `ShipDate\ShipDateParser`.
+  `ShipDate\*` (the date parser and the backfiller).
 
 ## Assumptions/Decisions made (some with feedback from team)
 
