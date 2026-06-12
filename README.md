@@ -15,7 +15,7 @@ with a table of order comments and does two things:
 Built with plain PHP 8.3 and PDO. No frameworks, no Composer packages, and
 vanilla JavaScript only (no libraries).
 
-> Status: Complete/Awaiting Team Validation
+> Status: Making a process change - the table should auto-update on loading the application for the date logic, the extra docker command is probably unneeded.  Will commit that change next.
 
 The original test brief is preserved in [TEST_INSTRUCTIONS.md](TEST_INSTRUCTIONS.md).
 
