@@ -71,6 +71,24 @@ Connection settings default to a stock local MySQL (`127.0.0.1`, user `root`,
 empty password, database `sweetwater_test`). If yours differ, copy
 `.env.example` to `.env` and adjust.
 
+## Running the tests
+
+I've added a small dependency-free test suite.
+ Run it locally:
+
+```bash
+php tests/run.php
+```
+
+Or inside the Docker container:
+
+```bash
+docker compose exec app php tests/run.php
+```
+
+It prints each result and exits non-zero if anything fails. The suite covers the ship-date parser and the comment classifier (common and edge cases for both.)
+
+
 ## How it works
 
 - `public/index.php` is **read-only**: it only reads the table to render the
