@@ -12,25 +12,27 @@ enum Category: string
     case Signature = 'signature';
     case Miscellaneous = 'misc';
 
+    // Full name for section headings and filter options.
     public function heading(): string
     {
         return match ($this) {
-            self::Candy          => 'Comments about candy',
-            self::CallPreference => "Comments about call me / don't call me",
-            self::Referral       => 'Comments about who referred me',
-            self::Signature      => 'Comments about signature requirements upon delivery',
-            self::Miscellaneous  => 'Miscellaneous comments',
+            self::Candy          => 'Candy',
+            self::CallPreference => "Do/Don't Call",
+            self::Referral       => 'Referral',
+            self::Signature      => 'Signature Requirements',
+            self::Miscellaneous  => 'Miscellaneous',
         };
     }
 
+    // Short name for the tags shown on each comment.
     public function label(): string
     {
         return match ($this) {
             self::Candy          => 'Candy',
-            self::CallPreference => "Call / don't call",
+            self::CallPreference => "Do/Don't Call",
             self::Referral       => 'Referral',
             self::Signature      => 'Signature',
-            self::Miscellaneous  => 'Miscellaneous',
+            self::Miscellaneous  => 'Misc.',
         };
     }
 

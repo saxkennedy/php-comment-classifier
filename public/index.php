@@ -136,6 +136,8 @@ header('Content-Type: text/html; charset=utf-8');
         </section>
     <?php endforeach; ?>
 
+    <p id="empty-state" class="empty" hidden></p>
+
     <script>
         (function () {
             const toggle = document.getElementById('cat-toggle');
@@ -203,15 +205,28 @@ header('Content-Type: text/html; charset=utf-8');
                     if (winner) { winner.style.display = ''; }
                 });
 
+                let totalVisible = 0;
                 document.querySelectorAll('section[data-category]').forEach(function (section) {
                     let visible = 0;
                     section.querySelectorAll('li[data-order-id]').forEach(function (card) {
                         if (card.style.display !== 'none') { visible += 1; }
                     });
+                    totalVisible += visible;
                     section.style.display = visible > 0 ? '' : 'none';
                     const count = section.querySelector('.count');
                     if (count) { count.textContent = '(' + visible + ')'; }
                 });
+
+                const emptyState = document.getElementById('empty-state');
+                if (selected.size === 0) {
+                    emptyState.textContent = 'No categories selected.';
+                    emptyState.hidden = false;
+                } else if (totalVisible === 0) {
+                    emptyState.textContent = 'No comments found.';
+                    emptyState.hidden = false;
+                } else {
+                    emptyState.hidden = true;
+                }
             }
         })();
     </script>
