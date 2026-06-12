@@ -11,5 +11,5 @@
 Thumbs.db
 __MACOSX/
 
-# PHP deps (intentionally unused — this project is dependency-free)
+# PHP deps (intentionally unused)
 vendor/
