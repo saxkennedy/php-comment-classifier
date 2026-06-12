@@ -47,18 +47,15 @@ enum Category: string
     }
 
     /**
-     * Sections in display order, with miscellaneous last as the catch-all.
+     * Sections in priority order (Miscellaneous lands last via its priority).
      *
      * @return list<self>
      */
     public static function displayOrder(): array
     {
-        return [
-            self::Candy,
-            self::CallPreference,
-            self::Referral,
-            self::Signature,
-            self::Miscellaneous,
-        ];
+        $cases = self::cases();
+        usort($cases, static fn (self $a, self $b): int => $a->priority() <=> $b->priority());
+
+        return $cases;
     }
 }

@@ -24,14 +24,25 @@ try {
 
 $classifier = new CommentClassifier();
 
+// Rank comments by category matches, then group 
 $grouped = [];
 foreach (Category::displayOrder() as $category) {
     $grouped[$category->value] = [];
 }
 foreach ($comments as $comment) {
     $categories = $classifier->classify($comment->text);
-    $grouped[$categories[0]->value][] = ['comment' => $comment, 'categories' => $categories];
+    foreach ($categories as $rank => $category) {
+        $grouped[$category->value][] = [
+            'comment'    => $comment,
+            'categories' => $categories,
+            'rank'       => $rank + 1,
+        ];
+    }
 }
+foreach ($grouped as &$entries) {
+    usort($entries, static fn (array $a, array $b): int => $a['rank'] <=> $b['rank']);
+}
+unset($entries);
 
 /** Escape text for safe HTML output. */
 function h(string $value): string
@@ -58,8 +69,8 @@ header('Content-Type: text/html; charset=utf-8');
         li { border: 1px solid #e3e3e3; border-radius: 6px; padding: 0.75rem 1rem; margin-bottom: 0.6rem; }
         .order-id { color: #888; font-size: 0.8em; }
         .chips { margin: 0.3rem 0 0.5rem; }
-        .chip { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px; background: #eee; color: #444; font-size: 0.72em; margin-right: 0.3rem; }
-        .chip-best { background: #1a1a1a; color: #fff; font-weight: bold; }
+        .chip { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px; border: 1px solid #bbb; background: #fff; color: #555; font-size: 0.72em; margin-right: 0.3rem; }
+        .chip-best { background: #2e7d32; border-color: #2e7d32; color: #fff; font-weight: bold; }
         .ship-date { font-size: 0.85em; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1px solid #e3e3e3; }
         .date-missing { color: #c1121f; font-weight: bold; }
         .empty { color: #999; font-style: italic; }
@@ -97,16 +108,19 @@ header('Content-Type: text/html; charset=utf-8');
     </div>
 
     <?php foreach (Category::displayOrder() as $category): ?>
-        <?php $items = $grouped[$category->value]; ?>
+        <?php
+            $items = $grouped[$category->value];
+            $bestCount = count(array_filter($items, static fn (array $i): bool => $i['rank'] === 1));
+        ?>
         <section data-category="<?= h($category->value) ?>">
-            <h2><?= h($category->heading()) ?> <span class="count">(<?= count($items) ?>)</span></h2>
+            <h2><?= h($category->heading()) ?> <span class="count">(<?= $bestCount ?>)</span></h2>
             <?php if ($items === []): ?>
                 <p class="empty">No comments in this section.</p>
             <?php else: ?>
                 <ul>
                     <?php foreach ($items as $item): ?>
                         <?php $comment = $item['comment']; ?>
-                        <li data-has-date="<?= $comment->expectedShipDate !== null ? '1' : '0' ?>">
+                        <li data-order-id="<?= $comment->orderId ?>" data-rank="<?= $item['rank'] ?>" data-has-date="<?= $comment->expectedShipDate !== null ? '1' : '0' ?>"<?= $item['rank'] === 1 ? '' : ' style="display: none;"' ?>>
                             <div class="order-id">Order #<?= $comment->orderId ?></div>
                             <div class="chips">
                                 <?php foreach ($item['categories'] as $index => $cat): ?>
@@ -160,28 +174,41 @@ header('Content-Type: text/html; charset=utf-8');
                            .map(function (option) { return option.value; })
                 );
                 const mode = dateFilter.value;
+                const cards = Array.from(document.querySelectorAll('li[data-order-id]'));
+
+                // A comment can have a card under several categories; group them.
+                const byOrder = {};
+                cards.forEach(function (card) {
+                    (byOrder[card.dataset.orderId] = byOrder[card.dataset.orderId] || []).push(card);
+                });
+
+                // Hide all but highest-ranked selected card per comment.
+                cards.forEach(function (card) { card.style.display = 'none'; });
+
+                Object.keys(byOrder).forEach(function (orderId) {
+                    const group = byOrder[orderId];
+                    const hasDate = group[0].dataset.hasDate === '1';
+                    const dateOk = mode === 'all' || (mode === 'present' && hasDate) || (mode === 'missing' && !hasDate);
+                    if (!dateOk) { return; }
+
+                    let winner = null;
+                    group.forEach(function (card) {
+                        const category = card.closest('section[data-category]').dataset.category;
+                        if (selected.has(category)) {
+                            if (winner === null || Number(card.dataset.rank) < Number(winner.dataset.rank)) {
+                                winner = card;
+                            }
+                        }
+                    });
+                    if (winner) { winner.style.display = ''; }
+                });
 
                 document.querySelectorAll('section[data-category]').forEach(function (section) {
-                    const categoryOn = selected.has(section.dataset.category);
                     let visible = 0;
-
-                    section.querySelectorAll('li[data-has-date]').forEach(function (card) {
-                        const hasDate = card.dataset.hasDate === '1';
-                        let dateOk;
-                        if (mode === 'present') {
-                            dateOk = hasDate;
-                        } else if (mode === 'missing') {
-                            dateOk = !hasDate;
-                        } else {
-                            dateOk = true;
-                        }
-
-                        const show = categoryOn && dateOk;
-                        card.style.display = show ? '' : 'none';
-                        if (show) { visible += 1; }
+                    section.querySelectorAll('li[data-order-id]').forEach(function (card) {
+                        if (card.style.display !== 'none') { visible += 1; }
                     });
-
-                    section.style.display = (categoryOn && visible > 0) ? '' : 'none';
+                    section.style.display = visible > 0 ? '' : 'none';
                     const count = section.querySelector('.count');
                     if (count) { count.textContent = '(' + visible + ')'; }
                 });
