@@ -3,7 +3,7 @@
 A small PHP application built for the Sweetwater web programmer test. It works
 with a table of order comments and does two things:
 
-1. **Comments report** (`public/index.php`) - a read-only web page that lists
+1. **Comments report** (`public/index.php`) - a web page that lists
    every comment, grouped under its best-match topic (candy, call me / don't
    call me, who referred me, signature on delivery, miscellaneous), tags each
    comment with every topic it matches, and offers category and ship-date
